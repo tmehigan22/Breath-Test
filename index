@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Breath Hold Test</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2e; --text:#e8eefc; --muted:#b8c4e6; --accent:#46d3ff; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { min-height:100svh; display:grid; place-items:center; padding:24px; }
+    .card { width:min(560px, 100%); background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+    h1 { margin:0 0 6px; font-size:20px; letter-spacing:.2px; }
+    p { margin:0 0 16px; color:var(--muted); line-height:1.4; }
+    .timer { display:flex; align-items:baseline; gap:10px; justify-content:center; padding:18px 0 10px; }
+    .secs { font-size:64px; font-weight:800; line-height:1; letter-spacing:-1px; }
+    .unit { color:var(--muted); font-weight:700; }
+    .status { text-align:center; color:var(--accent); font-weight:700; margin:6px 0 16px; min-height:22px; }
+    .btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    button { border:0; border-radius:12px; padding:12px 16px; font-weight:800; cursor:pointer; }
+    .start { background:var(--accent); color:#00131a; }
+    .stop  { background:#ff5a7a; color:#1a0006; }
+    .reset { background:#27324f; color:var(--text); border:1px solid rgba(255,255,255,.1); }
+    .share { background:#19e28c; color:#001a0e; }
+    .result { margin-top:14px; text-align:center; color:var(--muted); }
+    .pill { display:inline-block; margin-top:8px; padding:8px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); }
+    .fineprint { margin-top:16px; font-size:12px; color:#9fb0da; opacity:.95; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="Breath Holding Test">
+      <h1>Breath Holding Test</h1>
+      <p>Tap <b>Start</b>, take a deep breath, then hold until you feel comfortable. Tap <b>Stop</b>.</p>
+
+      <div class="timer" aria-live="polite">
+        <div class="secs" id="secs">0</div>
+        <div class="unit">s</div>
+      </div>
+
+      <div class="status" id="status">Ready</div>
+
+      <div class="btns">
+        <button class="start" id="startBtn">Start</button>
+        <button class="stop"  id="stopBtn" disabled>Stop</button>
+        <button class="reset" id="resetBtn">Reset</button>
+        <button class="share" id="shareBtn" disabled>Copy Result</button>
+      </div>
+
+      <div class="result" id="result"></div>
+
+      <div class="fineprint">
+        <b>Safety note:</b> Don’t do breath-holds in water or while driving. Sit down. Stop immediately if dizzy.
+        This is for awareness/entertainment and not medical advice.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let startTimeMs = null;
+    let elapsedMs = 0;
+    let rafId = null;
+    let running = false;
+
+    const secsEl   = document.getElementById('secs');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const shareBtn = document.getElementById('shareBtn');
+
+    function formatSeconds(ms) {
+      return Math.floor(ms / 1000);
+    }
+
+    // Optional: simple “bucket” messaging (tweak or remove)
+    // Example wording adapted from common online breath-hold articles; don’t claim diagnosis.
+    function bucketize(seconds) {
+      if (seconds < 20) return "Low (practice breathing & lifestyle basics)";
+      if (seconds < 40) return "Average";
+      return "Strong";
+    }
+
+    function tick(now) {
+      if (!running) return;
+      elapsedMs = now - startTimeMs;
+      secsEl.textContent = formatSeconds(elapsedMs);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function setUiState() {
+      startBtn.disabled = running;
+      stopBtn.disabled  = !running;
+      shareBtn.disabled = running || formatSeconds(elapsedMs) === 0;
+    }
+
+    startBtn.addEventListener('click', () => {
+      running = true;
+      startTimeMs = performance.now() - elapsedMs; // allows resume if you ever add it
+      statusEl.textContent = "Inhale… hold";
+      resultEl.textContent = "";
+      setUiState();
+      rafId = requestAnimationFrame(tick);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+      const s = formatSeconds(elapsedMs);
+      statusEl.textContent = "Stopped";
+      resultEl.innerHTML = `Your time: <b>${s}s</b><div class="pill">${bucketize(s)}</div>`;
+      setUiState();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+      startTimeMs = null;
+      elapsedMs = 0;
+      secsEl.textContent = "0";
+      statusEl.textContent = "Ready";
+      resultEl.textContent = "";
+      setUiState();
+    });
+
+    shareBtn.addEventListener('click', async () => {
+      const s = formatSeconds(elapsedMs);
+      const text = `I held my breath for ${s}s 🫁 Try it: (your link here)`;
+      try {
+        await navigator.clipboard.writeText(text);
+        statusEl.textContent = "Copied to clipboard ✅";
+        setTimeout(() => statusEl.textContent = "Ready", 1400);
+      } catch {
+        statusEl.textContent = "Copy failed (browser blocked)";
+      }
+    });
+
+    setUiState();
+  </script>
+</body>
+</html>
