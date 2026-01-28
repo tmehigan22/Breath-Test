@@ -205,14 +205,14 @@
   const resetBtn = document.getElementById('resetBtn');
 
   // Timing
-  const PRESTART_MS  = 1000; // buttons hide, then wait 1s
+  const PRESTART_MS  = 3000; // buttons hide, then wait 1s
   const COUNTDOWN_MS = 3000; // 3..2..1 (1s each)
   const INHALE_MS    = 3000; // inhale
   const HOLD_MS      = 60000;
 
   // Fill behavior
-  const START_T = 0.25;      // initial
-  const INHALE_END_T = 0.20; // down to 20% during inhale
+  const START_T = 0.3;      // initial
+  const INHALE_END_T = 0.25; // down to 20% during inhale
 
   let running = false;
   let raf = null;
