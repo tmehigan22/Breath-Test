@@ -9,7 +9,7 @@
       --bg: #ffd400;                 /* yellow background */
       --ringBorder: 14px;            /* outer ring thickness */
       --ringColor: rgba(0,0,0,.62);  /* outer ring */
-      --fill: rgba(0,0,0,.82);       /* darker inner fill circle */
+      --fill: rgba(0,0,0,.88);       /* darker inner fill circle */
       --btn: rgba(0,0,0,.92);
       --btnText: #ffffff;
     }
@@ -24,16 +24,19 @@
       overflow:hidden;
     }
 
-    /* Stage: make dial as large as possible while leaving room for bottom buttons */
+    /* Stage: dial large, reserve minimal space; buttons hide during run */
     .stage{
       min-height:100svh;
       display:grid;
       place-items:center;
-      padding-bottom: 92px; /* smaller reserve so dial grows */
+      padding-bottom: 92px;
+      transition: padding-bottom 240ms ease;
+    }
+    .stage.running{
+      padding-bottom: 10px; /* dial can sit lower when controls hidden */
     }
 
     .dial{
-      /* Bigger: use viewport min dimension so it fills screen */
       width: min(92vmin, 98vw);
       aspect-ratio:1/1;
       position:relative;
@@ -41,7 +44,6 @@
       place-items:center;
     }
 
-    /* Outer ring */
     .ring{
       position:absolute;
       inset:0;
@@ -49,28 +51,26 @@
       border: var(--ringBorder) solid var(--ringColor);
     }
 
-    /* Expanding fill circle (JS sets px size so it stops at ring inner edge) */
+    /* Fill circle uses a fixed base size and animates ONLY via transform scale (smooth) */
+    .fillWrap{
+      position:absolute;
+      width: 100%;
+      height: 100%;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+    }
+
     .fill{
-      width: 0px;
-      height: 0px;
+      width: var(--innerPx, 0px);
+      height: var(--innerPx, 0px);
       border-radius: 999px;
       background: var(--fill);
-      transform: scale(1);
-      transition: none;
-      will-change: width, height, transform;
+      transform: scale(0);
+      transform-origin: center;
+      will-change: transform;
     }
 
-    /* Inhale pulse */
-    .fill.pulse{
-      animation: inhalePulse 900ms ease-in-out infinite;
-    }
-    @keyframes inhalePulse{
-      0%   { transform: scale(0.985); }
-      50%  { transform: scale(1.015); }
-      100% { transform: scale(0.985); }
-    }
-
-    /* Center text */
     .center{
       position:absolute;
       inset:0;
@@ -87,8 +87,6 @@
       letter-spacing: .8px;
       text-transform: uppercase;
       color: #ffffff;
-
-      /* Black outline effect */
       text-shadow:
         -2px -2px 0 #000,
          2px -2px 0 #000,
@@ -100,7 +98,7 @@
         -3px  0px 0 #000;
     }
 
-    /* Bottom controls pinned low for screen recording */
+    /* Controls pinned low */
     .controls{
       position:fixed;
       left:0; right:0;
@@ -109,7 +107,15 @@
       display:flex;
       justify-content:center;
       gap:12px;
-      pointer-events:auto;
+      transition: transform 240ms ease, opacity 240ms ease;
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .controls.hidden{
+      transform: translateY(120%);
+      opacity: 0;
+      pointer-events:none;
     }
 
     button{
@@ -131,18 +137,18 @@
       min-width: 120px;
     }
 
-    button:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-    }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
   </style>
 </head>
 
 <body>
-  <div class="stage">
+  <div class="stage" id="stage">
     <div class="dial" id="dial">
       <div class="ring" id="ring"></div>
-      <div class="fill" id="fill"></div>
+
+      <div class="fillWrap">
+        <div class="fill" id="fill"></div>
+      </div>
 
       <div class="center">
         <div class="label" id="label">Ready</div>
@@ -150,119 +156,149 @@
     </div>
   </div>
 
-  <div class="controls">
+  <div class="controls" id="controls">
     <button id="startBtn">Start</button>
     <button class="secondary" id="resetBtn">Reset</button>
   </div>
 
 <script>
-  const dial = document.getElementById('dial');
-  const ring = document.getElementById('ring');
-  const fill = document.getElementById('fill');
-  const label = document.getElementById('label');
+  const stage    = document.getElementById('stage');
+  const controls = document.getElementById('controls');
+  const dial     = document.getElementById('dial');
+  const ring     = document.getElementById('ring');
+  const fill     = document.getElementById('fill');
+  const label    = document.getElementById('label');
 
   const startBtn = document.getElementById('startBtn');
   const resetBtn = document.getElementById('resetBtn');
 
-  const INHALE_MS = 3000;  // 3s inhale
-  const HOLD_MS   = 60000; // 60s hold
-  const TOTAL_MS  = INHALE_MS + HOLD_MS; // 63s total fill
+  // Timing
+  const PRESTART_MS = 1000; // buttons disappear, then wait 1s before test begins
+  const INHALE_MS   = 3000; // 3s inhale
+  const HOLD_MS     = 60000; // 60s hold
 
-  // Start fill at ~20% so it’s immediately visible
-  const START_T = 0.20; // 20% of max radius/diameter progression (visual)
+  // Fill behavior
+  const START_T = 0.25; // 25% at the very start
+  const INHALE_END_T = 0.20; // goes down to 20% during inhale
 
   let running = false;
-  let startMs = 0;
   let raf = null;
+  let startMs = 0;
 
-  function getMaxFillPx(){
-    // Fill should stop at the inner edge of the ring.
-    const dialRect = dial.getBoundingClientRect();
+  // Cache inner diameter to avoid per-frame layout reads (smooth)
+  let innerPx = 0;
+
+  function computeInnerPx(){
+    const rect = dial.getBoundingClientRect();
     const ringStyles = getComputedStyle(ring);
     const borderW = parseFloat(ringStyles.borderLeftWidth) || 0;
-    return Math.max(0, dialRect.width - 2 * borderW);
+    innerPx = Math.max(0, rect.width - 2 * borderW);
+    // Store as CSS var so fill element has a fixed base size
+    dial.style.setProperty('--innerPx', innerPx + 'px');
   }
 
-  function setFillPx(px){
-    fill.style.width = px + "px";
-    fill.style.height = px + "px";
+  function setScale(t){
+    // t is 0..1 representing % of inner diameter.
+    fill.style.transform = `scale(${t})`;
   }
 
   function reset(){
     running = false;
     cancelAnimationFrame(raf);
-    startBtn.disabled = false;
     label.textContent = "Ready";
-    fill.classList.remove('pulse');
-    setFillPx(0);
+    controls.classList.remove('hidden');
+    stage.classList.remove('running');
+    startBtn.disabled = false;
+    setScale(0);
   }
 
-  function tick(now){
+  function runLoop(now){
     if(!running) return;
 
     const elapsed = now - startMs;
-    const rawT = Math.min(elapsed / TOTAL_MS, 1);
 
-    // Map rawT (0..1) to visibleT (START_T..1)
-    const t = START_T + (1 - START_T) * rawT;
-
-    // Phase text + pulse during inhale only
-    if (elapsed < INHALE_MS){
-      label.textContent = "Inhale 🫁";
-      fill.classList.add('pulse');
-    } else {
-      label.textContent = "Hold 🫁";
-      fill.classList.remove('pulse');
-    }
-
-    // Fill in PX (never overlaps the ring)
-    const maxPx = getMaxFillPx();
-    setFillPx(maxPx * t);
-
-    if (rawT >= 1){
-      running = false;
-      startBtn.disabled = false;
-      fill.classList.remove('pulse');
-      label.textContent = "Done";
-      // Clamp exactly to max inner diameter (nearest inner edge of outer ring)
-      setFillPx(maxPx);
+    // Phase 0: prestart delay (buttons already hidden)
+    if(elapsed < PRESTART_MS){
+      label.textContent = "Ready";
+      setScale(START_T); // show 25% immediately while waiting
+      raf = requestAnimationFrame(runLoop);
       return;
     }
 
-    raf = requestAnimationFrame(tick);
+    const tAfterPre = elapsed - PRESTART_MS;
+
+    // Phase 1: inhale (scale DOWN from 25% to 20% over 3s)
+    if(tAfterPre < INHALE_MS){
+      const u = tAfterPre / INHALE_MS; // 0..1
+      // smooth ease in-out so it looks intentional, not jittery
+      const eased = 0.5 - 0.5 * Math.cos(Math.PI * u);
+      const t = START_T + (INHALE_END_T - START_T) * eased;
+      label.textContent = "Inhale 🫁";
+      setScale(t);
+      raf = requestAnimationFrame(runLoop);
+      return;
+    }
+
+    // Phase 2: hold (grow from 20% to 100% over 60s)
+    const holdElapsed = tAfterPre - INHALE_MS;
+    const v = Math.min(holdElapsed / HOLD_MS, 1); // 0..1
+    const eased = 0.5 - 0.5 * Math.cos(Math.PI * v); // smooth
+    const t = INHALE_END_T + (1 - INHALE_END_T) * eased;
+
+    label.textContent = "Hold 🫁";
+    setScale(t);
+
+    if(v >= 1){
+      running = false;
+      label.textContent = "Done";
+      setScale(1);
+
+      // show controls 1s after finish
+      setTimeout(() => {
+        controls.classList.remove('hidden');
+        stage.classList.remove('running');
+        startBtn.disabled = false;
+      }, 1000);
+
+      return;
+    }
+
+    raf = requestAnimationFrame(runLoop);
   }
 
   function start(){
     if(running) return;
+
+    computeInnerPx();
+
     running = true;
     startBtn.disabled = true;
 
-    // Immediately show the starting fill (~20%) so the effect is obvious
-    const maxPx = getMaxFillPx();
-    setFillPx(maxPx * START_T);
+    // Hide controls immediately
+    controls.classList.add('hidden');
+    stage.classList.add('running');
+
+    // Start visual at 25% right away (before prestart delay)
+    setScale(START_T);
 
     startMs = performance.now();
-    raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(runLoop);
   }
 
-  // Keep sizing correct on rotation/resizes
+  // Resize/orientation: recompute innerPx
   window.addEventListener('resize', () => {
-    if(!running){
-      const maxPx = getMaxFillPx();
-      if(label.textContent === "Done"){
-        setFillPx(maxPx);
-      } else if(label.textContent === "Ready"){
-        setFillPx(0);
-      } else {
-        // If paused mid-state (rare), clamp to at least START_T
-        setFillPx(maxPx * START_T);
-      }
+    computeInnerPx();
+    // If already done, keep at max
+    if(!running && label.textContent === "Done"){
+      setScale(1);
     }
   });
 
   startBtn.addEventListener('click', start);
   resetBtn.addEventListener('click', reset);
 
+  // initial
+  computeInnerPx();
   reset();
 </script>
 </body>
