@@ -8,8 +8,8 @@
     :root{
       --bg: #ffd400;                 /* yellow background */
       --ringBorder: 14px;            /* outer ring thickness */
-      --ringColor: rgba(0,0,0,.55);  /* ring stroke */
-      --fill: rgba(0,0,0,.60);       /* expanding inner circle */
+      --ringColor: rgba(0,0,0,.62);  /* outer ring */
+      --fill: rgba(0,0,0,.82);       /* darker inner fill circle */
       --btn: rgba(0,0,0,.92);
       --btnText: #ffffff;
     }
@@ -24,16 +24,17 @@
       overflow:hidden;
     }
 
-    /* Center stage */
+    /* Stage: make dial as large as possible while leaving room for bottom buttons */
     .stage{
       min-height:100svh;
       display:grid;
       place-items:center;
-      padding-bottom: 110px; /* reserve space so the dial isn't covered by buttons */
+      padding-bottom: 92px; /* smaller reserve so dial grows */
     }
 
     .dial{
-      width:min(430px, 90vw);
+      /* Bigger: use viewport min dimension so it fills screen */
+      width: min(92vmin, 98vw);
       aspect-ratio:1/1;
       position:relative;
       display:grid;
@@ -54,6 +55,19 @@
       height: 0px;
       border-radius: 999px;
       background: var(--fill);
+      transform: scale(1);
+      transition: none;
+      will-change: width, height, transform;
+    }
+
+    /* Inhale pulse */
+    .fill.pulse{
+      animation: inhalePulse 900ms ease-in-out infinite;
+    }
+    @keyframes inhalePulse{
+      0%   { transform: scale(0.985); }
+      50%  { transform: scale(1.015); }
+      100% { transform: scale(0.985); }
     }
 
     /* Center text */
@@ -68,7 +82,7 @@
     }
 
     .label{
-      font-size: 54px;
+      font-size: clamp(48px, 7.5vmin, 72px);
       font-weight: 1000;
       letter-spacing: .8px;
       text-transform: uppercase;
@@ -90,7 +104,7 @@
     .controls{
       position:fixed;
       left:0; right:0;
-      bottom: 14px;
+      bottom: 10px;
       padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 8px);
       display:flex;
       justify-content:center;
@@ -107,14 +121,14 @@
       cursor:pointer;
       background: var(--btn);
       color: var(--btnText);
-      min-width: 140px;
+      min-width: 150px;
     }
 
     button.secondary{
       background: rgba(0,0,0,.10);
       color: rgba(0,0,0,.95);
       border: 1px solid rgba(0,0,0,.18);
-      min-width: 110px;
+      min-width: 120px;
     }
 
     button:disabled{
@@ -154,18 +168,19 @@
   const HOLD_MS   = 60000; // 60s hold
   const TOTAL_MS  = INHALE_MS + HOLD_MS; // 63s total fill
 
+  // Start fill at ~20% so it’s immediately visible
+  const START_T = 0.20; // 20% of max radius/diameter progression (visual)
+
   let running = false;
   let startMs = 0;
   let raf = null;
 
   function getMaxFillPx(){
     // Fill should stop at the inner edge of the ring.
-    // Inner diameter = dial diameter - (2 * ring border width)
     const dialRect = dial.getBoundingClientRect();
     const ringStyles = getComputedStyle(ring);
     const borderW = parseFloat(ringStyles.borderLeftWidth) || 0;
-    const maxPx = Math.max(0, dialRect.width - 2 * borderW);
-    return maxPx;
+    return Math.max(0, dialRect.width - 2 * borderW);
   }
 
   function setFillPx(px){
@@ -178,6 +193,7 @@
     cancelAnimationFrame(raf);
     startBtn.disabled = false;
     label.textContent = "Ready";
+    fill.classList.remove('pulse');
     setFillPx(0);
   }
 
@@ -185,21 +201,31 @@
     if(!running) return;
 
     const elapsed = now - startMs;
-    const t = Math.min(elapsed / TOTAL_MS, 1);
+    const rawT = Math.min(elapsed / TOTAL_MS, 1);
 
-    // Phase text
-    if (elapsed < INHALE_MS) label.textContent = "Inhale 🫁";
-    else label.textContent = "Hold 🫁";
+    // Map rawT (0..1) to visibleT (START_T..1)
+    const t = START_T + (1 - START_T) * rawT;
 
-    // Fill amount in PX so it never overlaps the ring
+    // Phase text + pulse during inhale only
+    if (elapsed < INHALE_MS){
+      label.textContent = "Inhale 🫁";
+      fill.classList.add('pulse');
+    } else {
+      label.textContent = "Hold 🫁";
+      fill.classList.remove('pulse');
+    }
+
+    // Fill in PX (never overlaps the ring)
     const maxPx = getMaxFillPx();
     setFillPx(maxPx * t);
 
-    if (t >= 1){
+    if (rawT >= 1){
       running = false;
       startBtn.disabled = false;
-      // Keep it at max (already)
+      fill.classList.remove('pulse');
       label.textContent = "Done";
+      // Clamp exactly to max inner diameter (nearest inner edge of outer ring)
+      setFillPx(maxPx);
       return;
     }
 
@@ -210,20 +236,26 @@
     if(running) return;
     running = true;
     startBtn.disabled = true;
+
+    // Immediately show the starting fill (~20%) so the effect is obvious
+    const maxPx = getMaxFillPx();
+    setFillPx(maxPx * START_T);
+
     startMs = performance.now();
     raf = requestAnimationFrame(tick);
   }
 
-  // Recompute sizing on resize/orientation changes (important on phones)
+  // Keep sizing correct on rotation/resizes
   window.addEventListener('resize', () => {
-    // If finished or paused, keep fill clamped correctly to ring
     if(!running){
-      // If fill is at max, reapply max.
-      // We can detect by checking if label is "Done".
+      const maxPx = getMaxFillPx();
       if(label.textContent === "Done"){
-        setFillPx(getMaxFillPx());
+        setFillPx(maxPx);
       } else if(label.textContent === "Ready"){
         setFillPx(0);
+      } else {
+        // If paused mid-state (rare), clamp to at least START_T
+        setFillPx(maxPx * START_T);
       }
     }
   });
