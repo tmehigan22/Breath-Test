@@ -6,13 +6,11 @@
   <title>Breath Hold Visual</title>
   <style>
     :root{
-      --bg: #ffd400;          /* yellow background */
-      --text: rgba(0,0,0,.92);
-      --muted: rgba(0,0,0,.60);
-      --ring: rgba(0,0,0,.35);
-      --ringStrong: rgba(0,0,0,.75);
-      --fill: rgba(0,0,0,.55); /* expanding inner circle */
-      --btn: rgba(0,0,0,.90);
+      --bg: #ffd400;                 /* yellow background */
+      --ringBorder: 14px;            /* outer ring thickness */
+      --ringColor: rgba(0,0,0,.55);  /* ring stroke */
+      --fill: rgba(0,0,0,.60);       /* expanding inner circle */
+      --btn: rgba(0,0,0,.92);
       --btnText: #ffffff;
     }
 
@@ -21,62 +19,21 @@
     body{
       margin:0;
       min-height:100svh;
-      display:grid;
-      place-items:center;
-      padding:18px;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background: var(--bg);
-      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow:hidden;
     }
 
-    .shell{
-      width:min(520px, 100%);
-      padding:18px 18px 16px;
-      border-radius:22px;
-      background: rgba(255,255,255,.16);
-      border: 1px solid rgba(0,0,0,.10);
-      box-shadow: 0 18px 50px rgba(0,0,0,.18);
-      backdrop-filter: blur(6px);
-    }
-
-    .header{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-      margin-bottom:10px;
-    }
-    .title{
-      margin:0;
-      font-size:18px;
-      font-weight:950;
-      letter-spacing:.2px;
-    }
-    .subtitle{
-      margin:6px 0 0;
-      color: var(--muted);
-      font-size:13px;
-      line-height:1.35;
-    }
-    .badge{
-      padding:8px 10px;
-      border-radius:999px;
-      background: rgba(0,0,0,.08);
-      border: 1px solid rgba(0,0,0,.12);
-      color: rgba(0,0,0,.75);
-      font-weight:900;
-      font-size:12px;
-      white-space:nowrap;
-    }
-
+    /* Center stage */
     .stage{
+      min-height:100svh;
       display:grid;
       place-items:center;
-      margin: 10px 0 12px;
+      padding-bottom: 110px; /* reserve space so the dial isn't covered by buttons */
     }
 
     .dial{
-      width:min(390px, 84vw);
+      width:min(430px, 90vw);
       aspect-ratio:1/1;
       position:relative;
       display:grid;
@@ -86,28 +43,20 @@
     /* Outer ring */
     .ring{
       position:absolute;
-      inset: 0;
-      border-radius: 999px;
-      border: 12px solid var(--ring);
-    }
-    .ringStrong{
-      position:absolute;
-      inset: 0;
-      border-radius: 999px;
-      border: 12px solid var(--ringStrong);
-      mask: radial-gradient(circle, transparent 62%, #000 63%);
-      pointer-events:none;
-      opacity:.35;
+      inset:0;
+      border-radius:999px;
+      border: var(--ringBorder) solid var(--ringColor);
     }
 
-    /* Expanding inner fill circle */
+    /* Expanding fill circle (JS sets px size so it stops at ring inner edge) */
     .fill{
-      width: 0%;
-      height: 0%;
+      width: 0px;
+      height: 0px;
       border-radius: 999px;
       background: var(--fill);
     }
 
+    /* Center text */
     .center{
       position:absolute;
       inset:0;
@@ -117,167 +66,140 @@
       padding: 24px;
       pointer-events:none;
     }
+
     .label{
-      font-size:46px;
-      font-weight:1000;
-      letter-spacing:.6px;
+      font-size: 54px;
+      font-weight: 1000;
+      letter-spacing: .8px;
       text-transform: uppercase;
-      line-height:1.05;
-    }
-    .timer{
-      margin-top:10px;
-      font-size:18px;
-      font-weight:900;
-      color: rgba(0,0,0,.65);
+      color: #ffffff;
+
+      /* Black outline effect */
+      text-shadow:
+        -2px -2px 0 #000,
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+         0px  3px 0 #000,
+         0px -3px 0 #000,
+         3px  0px 0 #000,
+        -3px  0px 0 #000;
     }
 
+    /* Bottom controls pinned low for screen recording */
     .controls{
+      position:fixed;
+      left:0; right:0;
+      bottom: 14px;
+      padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 8px);
       display:flex;
-      gap:10px;
       justify-content:center;
-      flex-wrap:wrap;
-      margin-top: 8px;
+      gap:12px;
+      pointer-events:auto;
     }
+
     button{
       border:0;
-      border-radius:14px;
-      padding: 12px 16px;
-      font-weight:950;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-weight: 950;
+      font-size: 16px;
       cursor:pointer;
-    }
-    .start{
       background: var(--btn);
       color: var(--btnText);
       min-width: 140px;
     }
-    .secondary{
-      background: rgba(0,0,0,.08);
-      color: rgba(0,0,0,.9);
-      border: 1px solid rgba(0,0,0,.14);
-    }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
 
-    .status{
-      margin-top:10px;
-      min-height:20px;
-      text-align:center;
-      color: rgba(0,0,0,.65);
-      font-size:13px;
+    button.secondary{
+      background: rgba(0,0,0,.10);
+      color: rgba(0,0,0,.95);
+      border: 1px solid rgba(0,0,0,.18);
+      min-width: 110px;
     }
 
-    .fineprint{
-      margin-top: 12px;
-      font-size: 12px;
-      color: rgba(0,0,0,.55);
-      line-height:1.35;
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
     }
   </style>
 </head>
 
 <body>
-  <div class="shell">
-    <div class="header">
-      <div>
-        <h1 class="title">Smoker / Vaper Lung Test</h1>
-        <p class="subtitle">Tap Start once. 3s inhale → hold while the circle fills.</p>
+  <div class="stage">
+    <div class="dial" id="dial">
+      <div class="ring" id="ring"></div>
+      <div class="fill" id="fill"></div>
+
+      <div class="center">
+        <div class="label" id="label">Ready</div>
       </div>
-      <div class="badge" id="phaseBadge">READY</div>
-    </div>
-
-    <div class="stage">
-      <div class="dial">
-        <div class="ring"></div>
-        <div class="ringStrong"></div>
-        <div class="fill" id="fill"></div>
-
-        <div class="center">
-          <div>
-            <div class="label" id="label">Ready</div>
-            <div class="timer" id="timer">0.0s</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button class="start" id="startBtn">Start</button>
-      <button class="secondary" id="resetBtn">Reset</button>
-    </div>
-
-    <div class="status" id="status"></div>
-
-    <div class="fineprint">
-      Safety: do this sitting down. Don’t do breath-holds in water or while driving. Stop immediately if dizzy.
-      For awareness/entertainment only — not a medical test.
     </div>
   </div>
 
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button class="secondary" id="resetBtn">Reset</button>
+  </div>
+
 <script>
+  const dial = document.getElementById('dial');
+  const ring = document.getElementById('ring');
+  const fill = document.getElementById('fill');
+  const label = document.getElementById('label');
+
   const startBtn = document.getElementById('startBtn');
   const resetBtn = document.getElementById('resetBtn');
-  const fillEl   = document.getElementById('fill');
-  const labelEl  = document.getElementById('label');
-  const timerEl  = document.getElementById('timer');
-  const statusEl = document.getElementById('status');
-  const badgeEl  = document.getElementById('phaseBadge');
 
-  const INHALE_MS = 3000;   // 3 seconds (per your request)
-  const HOLD_MS   = 60000;  // 60 seconds to finish filling AFTER inhale
+  const INHALE_MS = 3000;  // 3s inhale
+  const HOLD_MS   = 60000; // 60s hold
+  const TOTAL_MS  = INHALE_MS + HOLD_MS; // 63s total fill
 
   let running = false;
-  let raf = null;
   let startMs = 0;
+  let raf = null;
 
-  function setUIReady(){
-    running = false;
-    cancelAnimationFrame(raf);
-    fillEl.style.width = "0%";
-    fillEl.style.height = "0%";
-    labelEl.textContent = "Ready";
-    timerEl.textContent = "0.0s";
-    statusEl.textContent = "";
-    badgeEl.textContent = "READY";
-    startBtn.disabled = false;
+  function getMaxFillPx(){
+    // Fill should stop at the inner edge of the ring.
+    // Inner diameter = dial diameter - (2 * ring border width)
+    const dialRect = dial.getBoundingClientRect();
+    const ringStyles = getComputedStyle(ring);
+    const borderW = parseFloat(ringStyles.borderLeftWidth) || 0;
+    const maxPx = Math.max(0, dialRect.width - 2 * borderW);
+    return maxPx;
   }
 
-  function format(s){ return `${s.toFixed(1)}s`; }
+  function setFillPx(px){
+    fill.style.width = px + "px";
+    fill.style.height = px + "px";
+  }
 
-  function setFill(t){
-    // Slightly under 100% so ring edge stays visible
-    const size = 98 * t; // percent
-    fillEl.style.width  = `${size}%`;
-    fillEl.style.height = `${size}%`;
+  function reset(){
+    running = false;
+    cancelAnimationFrame(raf);
+    startBtn.disabled = false;
+    label.textContent = "Ready";
+    setFillPx(0);
   }
 
   function tick(now){
     if(!running) return;
 
     const elapsed = now - startMs;
+    const t = Math.min(elapsed / TOTAL_MS, 1);
 
-    // Total animation time = inhale + hold
-    const totalMs = INHALE_MS + HOLD_MS;
+    // Phase text
+    if (elapsed < INHALE_MS) label.textContent = "Inhale 🫁";
+    else label.textContent = "Hold 🫁";
 
-    // Overall fill should begin immediately on start (visible during inhale)
-    const totalT = Math.min(elapsed / totalMs, 1);
-    setFill(totalT);
+    // Fill amount in PX so it never overlaps the ring
+    const maxPx = getMaxFillPx();
+    setFillPx(maxPx * t);
 
-    // Phase labeling
-    if(elapsed < INHALE_MS){
-      badgeEl.textContent = "INHALE";
-      labelEl.textContent = "Inhale 🫁";
-    } else {
-      badgeEl.textContent = "HOLD";
-      labelEl.textContent = "Hold 🫁";
-    }
-
-    timerEl.textContent = format(elapsed / 1000);
-
-    if(totalT >= 1){
+    if (t >= 1){
       running = false;
       startBtn.disabled = false;
-      badgeEl.textContent = "DONE";
-      labelEl.textContent = "Done";
-      statusEl.textContent = "Done. (Reset or Start again)";
+      // Keep it at max (already)
+      label.textContent = "Done";
       return;
     }
 
@@ -288,15 +210,28 @@
     if(running) return;
     running = true;
     startBtn.disabled = true;
-    statusEl.textContent = "Tip: open full-screen for a cleaner screen recording.";
     startMs = performance.now();
     raf = requestAnimationFrame(tick);
   }
 
-  startBtn.addEventListener('click', start);
-  resetBtn.addEventListener('click', setUIReady);
+  // Recompute sizing on resize/orientation changes (important on phones)
+  window.addEventListener('resize', () => {
+    // If finished or paused, keep fill clamped correctly to ring
+    if(!running){
+      // If fill is at max, reapply max.
+      // We can detect by checking if label is "Done".
+      if(label.textContent === "Done"){
+        setFillPx(getMaxFillPx());
+      } else if(label.textContent === "Ready"){
+        setFillPx(0);
+      }
+    }
+  });
 
-  setUIReady();
+  startBtn.addEventListener('click', start);
+  resetBtn.addEventListener('click', reset);
+
+  reset();
 </script>
 </body>
 </html>
