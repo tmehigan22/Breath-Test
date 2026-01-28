@@ -3,153 +3,198 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Breath Hold Test</title>
+  <title>Breath Hold Visual</title>
   <style>
     :root{
       --bg: #0c0f16;
-      --card: rgba(255,255,255,.06);
-      --ring: rgba(255,255,255,.30);
-      --ring-strong: rgba(255,255,255,.85);
       --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.62);
+      --muted: rgba(255,255,255,.65);
+      --ring: rgba(255,255,255,.85);
+      --ringThin: rgba(255,255,255,.28);
+      --fill: rgba(0,0,0,.45); /* the expanding inner circle */
       --accent: #57e3ff;
-      --danger: #ff4d6d;
     }
-
     *{ box-sizing:border-box; }
     body{
       margin:0;
       min-height:100svh;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 900px at 50% 20%, rgba(87,227,255,.10), transparent 60%),
-                  radial-gradient(900px 700px at 50% 80%, rgba(255,77,109,.08), transparent 65%),
-                  var(--bg);
-      color: var(--text);
       display:grid;
       place-items:center;
-      padding: 18px;
+      padding:18px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 900px at 50% 20%, rgba(87,227,255,.10), transparent 60%),
+        radial-gradient(900px 700px at 50% 85%, rgba(255,77,109,.08), transparent 60%),
+        var(--bg);
+      color: var(--text);
     }
 
     .shell{
       width:min(520px, 100%);
-      padding: 18px 18px 16px;
-      border-radius: 22px;
+      padding:18px 18px 16px;
+      border-radius:22px;
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       border: 1px solid rgba(255,255,255,.10);
       box-shadow: 0 18px 50px rgba(0,0,0,.45);
     }
 
-    .top{
+    .header{
       display:flex;
       justify-content:space-between;
-      align-items:flex-start;
       gap:12px;
-      margin-bottom: 10px;
+      align-items:flex-start;
+      margin-bottom:10px;
     }
-
     .title{
-      font-weight: 850;
-      letter-spacing: .2px;
-      font-size: 18px;
       margin:0;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.2px;
     }
     .subtitle{
-      margin: 6px 0 0;
+      margin:6px 0 0;
       color: var(--muted);
-      font-size: 13px;
+      font-size:13px;
       line-height:1.35;
     }
-
     .badge{
-      padding: 8px 10px;
-      border-radius: 999px;
+      padding:8px 10px;
+      border-radius:999px;
       background: rgba(255,255,255,.07);
       border: 1px solid rgba(255,255,255,.10);
       color: var(--muted);
-      font-weight: 700;
-      font-size: 12px;
+      font-weight:800;
+      font-size:12px;
       white-space:nowrap;
     }
 
     .stage{
-      display:flex;
-      justify-content:center;
-      margin: 14px 0 8px;
+      display:grid;
+      place-items:center;
+      margin: 10px 0 12px;
     }
 
-    /* Circle size scales nicely on mobile */
     .dial{
-      width:min(360px, 80vw);
-      aspect-ratio: 1/1;
+      width:min(380px, 82vw);
+      aspect-ratio:1/1;
       position:relative;
-      user-select:none;
-      touch-action: manipulation;
+      display:grid;
+      place-items:center;
+    }
+
+    /* Outer ring */
+    .ring{
+      position:absolute;
+      inset: 0;
+      border-radius: 999px;
+      border: 10px solid var(--ringThin);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .ringStrong{
+      position:absolute;
+      inset: 0;
+      border-radius: 999px;
+      border: 10px solid rgba(255,255,255,.22);
+      mask: radial-gradient(circle, transparent 62%, #000 63%); /* subtle rim */
+      pointer-events:none;
+    }
+
+    /* Expanding inner fill circle */
+    .fill{
+      width: 0%;
+      height: 0%;
+      border-radius: 999px;
+      background: var(--fill);
+      transition: none;
     }
 
     .center{
       position:absolute;
-      inset: 0;
+      inset:0;
       display:grid;
       place-items:center;
       text-align:center;
       padding: 24px;
+      pointer-events:none;
     }
-
-    .bigWord{
-      font-size: 42px;
-      font-weight: 950;
-      letter-spacing: .6px;
+    .label{
+      font-size:44px;
+      font-weight:950;
+      letter-spacing:.5px;
       text-transform: uppercase;
-      line-height:1;
+      line-height:1.05;
       text-shadow: 0 8px 30px rgba(0,0,0,.45);
     }
-
-    .time{
-      margin-top: 10px;
-      font-size: 18px;
-      font-weight: 800;
+    .timer{
+      margin-top:10px;
+      font-size:18px;
+      font-weight:850;
       color: var(--muted);
     }
 
-    .hint{
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
-      line-height:1.35;
+    /* Little dots for style (optional) */
+    .dot{
+      position:absolute;
+      width:12px; height:12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.85);
+      top: 6%;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+    }
+    .dot.small{
+      width:10px; height:10px;
+      background: rgba(255,255,255,.75);
+      top: 14%;
+      left: 18%;
+    }
+    .dot.small2{
+      width:10px; height:10px;
+      background: rgba(255,255,255,.75);
+      top: 14%;
+      left: 82%;
+    }
+    .dot.red{
+      width:10px; height:10px;
+      background: rgba(255,77,109,.95);
+      top: 10%;
+      left: 68%;
     }
 
-    .actions{
+    .controls{
       display:flex;
       gap:10px;
       justify-content:center;
       flex-wrap:wrap;
-      margin-top: 14px;
+      margin-top: 6px;
     }
-
     button{
       border:0;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-weight: 900;
+      border-radius:14px;
+      padding: 12px 16px;
+      font-weight:950;
       cursor:pointer;
-      color: #001015;
-      background: var(--accent);
-      box-shadow: 0 10px 24px rgba(87,227,255,.18);
     }
-    button.secondary{
+    .start{
+      background: var(--accent);
+      color:#001015;
+      box-shadow: 0 10px 24px rgba(87,227,255,.18);
+      min-width: 140px;
+    }
+    .secondary{
       background: rgba(255,255,255,.08);
       color: var(--text);
       border: 1px solid rgba(255,255,255,.12);
-      box-shadow:none;
     }
     button:disabled{ opacity:.55; cursor:not-allowed; }
 
-    .resultLine{
-      margin-top: 10px;
+    .status{
+      margin-top:10px;
+      min-height:20px;
       text-align:center;
       color: var(--muted);
-      font-size: 13px;
-      min-height: 20px;
+      font-size:13px;
     }
 
     .fineprint{
@@ -158,79 +203,46 @@
       color: rgba(255,255,255,.55);
       line-height:1.35;
     }
-
-    /* SVG styling */
-    svg{ width:100%; height:100%; display:block; }
-    .ringBase{ stroke: var(--ring); stroke-width: 10; fill: none; }
-    .ringProg{
-      stroke: var(--ring-strong);
-      stroke-width: 10;
-      fill:none;
-      stroke-linecap: round;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-      filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
-    }
-    .glow{
-      filter: drop-shadow(0 0 18px rgba(87,227,255,.35));
-    }
-    .marker{
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
-    }
-
-    /* “Pressing” feel */
-    .dial.pressed .bigWord{ transform: scale(0.98); }
   </style>
 </head>
 
 <body>
   <div class="shell">
-    <div class="top">
+    <div class="header">
       <div>
-        <h1 class="title">Smoker / Vaper Lung Test</h1>
-        <p class="subtitle">Press & hold to start. Release to stop. Share your time in the comments.</p>
+        <h1 class="title">Breath Hold Visual Test</h1>
+        <p class="subtitle">Tap Start once, then screen-record. 4s inhale → 60s hold fill.</p>
       </div>
-      <div class="badge" id="modeBadge">HOLD MODE</div>
+      <div class="badge" id="phaseBadge">READY</div>
     </div>
 
     <div class="stage">
-      <div class="dial" id="dial" aria-label="Breath hold dial">
-        <svg viewBox="0 0 200 200" aria-hidden="true">
-          <!-- Base ring -->
-          <circle class="ringBase" cx="100" cy="100" r="78"></circle>
+      <div class="dial">
+        <div class="ring"></div>
+        <div class="ringStrong"></div>
 
-          <!-- Decorative dots (like your inspiration) -->
-          <circle cx="36" cy="74" r="5" fill="rgba(255,255,255,.85)"></circle>
-          <circle cx="100" cy="22" r="6" fill="rgba(255,255,255,.85)"></circle>
-          <circle cx="158" cy="74" r="5" fill="rgba(255,255,255,.85)"></circle>
-          <circle cx="145" cy="48" r="4.5" fill="rgba(255,77,109,.95)"></circle>
+        <div class="dot"></div>
+        <div class="dot small"></div>
+        <div class="dot small2"></div>
+        <div class="dot red"></div>
 
-          <!-- Progress arc (stroke-dashoffset controlled in JS) -->
-          <circle class="ringProg glow" id="prog"
-                  cx="100" cy="100" r="78"
-                  stroke-dasharray="490"
-                  stroke-dashoffset="490"></circle>
-
-          <!-- Moving marker dot (positioned in JS) -->
-          <circle class="marker" id="marker" cx="100" cy="22" r="6" fill="var(--accent)"></circle>
-        </svg>
+        <div class="fill" id="fill"></div>
 
         <div class="center">
           <div>
-            <div class="bigWord" id="bigWord">HOLD</div>
-            <div class="time" id="time">0.0s</div>
-            <div class="hint" id="hint">Press and hold anywhere on the circle</div>
+            <div class="label" id="label">Ready</div>
+            <div class="timer" id="timer">0.0s</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="actions">
-      <button id="copyBtn" class="secondary" disabled>Copy Result</button>
-      <button id="resetBtn" class="secondary">Reset</button>
+    <div class="controls">
+      <button class="start" id="startBtn">Start</button>
+      <button class="secondary" id="resetBtn">Reset</button>
     </div>
 
-    <div class="resultLine" id="resultLine"></div>
+    <div class="status" id="status"></div>
 
     <div class="fineprint">
       Safety: do this sitting down. Don’t do breath-holds in water or while driving. Stop immediately if dizzy.
@@ -238,117 +250,91 @@
     </div>
   </div>
 
-  <script>
-    // --- Dial math helpers ---
-    const dial = document.getElementById('dial');
-    const prog = document.getElementById('prog');
-    const marker = document.getElementById('marker');
-    const bigWord = document.getElementById('bigWord');
-    const timeEl = document.getElementById('time');
-    const hintEl = document.getElementById('hint');
-    const resultLine = document.getElementById('resultLine');
-    const copyBtn = document.getElementById('copyBtn');
-    const resetBtn = document.getElementById('resetBtn');
+<script>
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const fillEl   = document.getElementById('fill');
+  const labelEl  = document.getElementById('label');
+  const timerEl  = document.getElementById('timer');
+  const statusEl = document.getElementById('status');
+  const badgeEl  = document.getElementById('phaseBadge');
 
-    const CIRC = 490; // matches stroke-dasharray
-    const R = 78;
-    const CX = 100, CY = 100;
+  const INHALE_MS = 4000;     // 4 seconds
+  const HOLD_MS   = 60000;    // 1 minute fill
 
-    let running = false;
-    let startMs = 0;
-    let elapsedMs = 0;
-    let raf = null;
+  let running = false;
+  let raf = null;
+  let startMs = 0;
 
-    // Cap for the ring fill (purely visual). Past this, it keeps animating.
-    const VISUAL_CAP_SECONDS = 60;
+  function setUIReady(){
+    running = false;
+    cancelAnimationFrame(raf);
+    fillEl.style.width = "0%";
+    fillEl.style.height = "0%";
+    labelEl.textContent = "Ready";
+    timerEl.textContent = "0.0s";
+    statusEl.textContent = "";
+    badgeEl.textContent = "READY";
+    startBtn.disabled = false;
+  }
 
-    function setProgress(seconds){
-      const t = Math.min(seconds, VISUAL_CAP_SECONDS) / VISUAL_CAP_SECONDS; // 0..1
-      const offset = CIRC * (1 - t);
-      prog.style.strokeDashoffset = String(offset);
+  function format(s){ return `${s.toFixed(1)}s`; }
 
-      // Marker angle: start at top (-90deg), sweep clockwise
-      const ang = (-90 + 360 * t) * (Math.PI/180);
-      const x = CX + R * Math.cos(ang);
-      const y = CY + R * Math.sin(ang);
-      marker.setAttribute('cx', x.toFixed(2));
-      marker.setAttribute('cy', y.toFixed(2));
-    }
+  function tick(now){
+    if(!running) return;
 
-    function tick(now){
-      if(!running) return;
-      elapsedMs = now - startMs;
-      const s = elapsedMs / 1000;
-      timeEl.textContent = `${s.toFixed(1)}s`;
-      setProgress(s);
+    const elapsed = now - startMs;
+
+    // Phase 1: Inhale (4s)
+    if(elapsed < INHALE_MS){
+      badgeEl.textContent = "INHALE";
+      labelEl.textContent = "Inhale 🫁";
+      timerEl.textContent = format(elapsed / 1000);
+      // Keep fill at 0 during inhale to match your spec
+      fillEl.style.width = "0%";
+      fillEl.style.height = "0%";
       raf = requestAnimationFrame(tick);
+      return;
     }
 
-    function start(){
-      if(running) return;
-      running = true;
-      dial.classList.add('pressed');
-      resultLine.textContent = "";
-      copyBtn.disabled = true;
+    // Phase 2: Hold (60s fill)
+    const holdElapsed = elapsed - INHALE_MS;
+    const t = Math.min(holdElapsed / HOLD_MS, 1); // 0..1
 
-      bigWord.textContent = "HOLD";
-      hintEl.textContent = "Keep holding… release to stop";
-      startMs = performance.now();
-      elapsedMs = 0;
-      setProgress(0);
-      raf = requestAnimationFrame(tick);
-    }
+    badgeEl.textContent = "HOLD";
+    labelEl.textContent = "Hold 🫁";
+    timerEl.textContent = format((elapsed) / 1000);
 
-    function stop(){
-      if(!running) return;
+    // Expand inner circle from 0% to ~100% of the dial.
+    // Slightly under 100% so you still see the outer rim.
+    const size = 98 * t; // percent
+    fillEl.style.width  = `${size}%`;
+    fillEl.style.height = `${size}%`;
+
+    if(t >= 1){
       running = false;
-      dial.classList.remove('pressed');
-      cancelAnimationFrame(raf);
-
-      const s = elapsedMs / 1000;
-      bigWord.textContent = "DONE";
-      hintEl.textContent = "Press and hold to try again";
-
-      // Light “tier” text (don’t claim diagnosis)
-      let tier = "Average";
-      if (s < 20) tier = "Low";
-      else if (s >= 40) tier = "Strong";
-
-      resultLine.innerHTML = `Your time: <b>${s.toFixed(1)}s</b> · Tier: <b>${tier}</b>`;
-      copyBtn.disabled = s <= 0.1;
-      setProgress(s); // keep final visual
+      startBtn.disabled = false;
+      statusEl.textContent = "Done. (Reset or Start again)";
+      badgeEl.textContent = "DONE";
+      return;
     }
 
-    function reset(){
-      running = false;
-      cancelAnimationFrame(raf);
-      elapsedMs = 0;
-      bigWord.textContent = "HOLD";
-      timeEl.textContent = "0.0s";
-      hintEl.textContent = "Press and hold anywhere on the circle";
-      resultLine.textContent = "";
-      copyBtn.disabled = true;
-      setProgress(0);
-    }
+    raf = requestAnimationFrame(tick);
+  }
 
-    // Press-and-hold interactions (mouse + touch)
-    dial.addEventListener('pointerdown', (e) => { e.preventDefault(); start(); });
-    window.addEventListener('pointerup', () => stop());
-    window.addEventListener('pointercancel', () => stop());
+  function start(){
+    if(running) return;
+    running = true;
+    startBtn.disabled = true;
+    statusEl.textContent = "Recording tip: use full-screen browser for a clean capture.";
+    startMs = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
 
-    copyBtn.addEventListener('click', async () => {
-      const s = (elapsedMs/1000).toFixed(1);
-      const text = `I held my breath for ${s}s 🫁 Try it: (paste your link here)`;
-      try{
-        await navigator.clipboard.writeText(text);
-        resultLine.textContent = "Copied ✅ (paste into TikTok caption/comments)";
-      }catch{
-        resultLine.textContent = "Copy failed (browser blocked clipboard)";
-      }
-    });
+  startBtn.addEventListener('click', start);
+  resetBtn.addEventListener('click', setUIReady);
 
-    resetBtn.addEventListener('click', reset);
-    reset();
-  </script>
+  setUIReady();
+</script>
 </body>
 </html>
