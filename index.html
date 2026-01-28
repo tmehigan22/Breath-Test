@@ -6,15 +6,18 @@
   <title>Breath Hold Visual</title>
   <style>
     :root{
-      --bg: #0c0f16;
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.65);
-      --ring: rgba(255,255,255,.85);
-      --ringThin: rgba(255,255,255,.28);
-      --fill: rgba(0,0,0,.45); /* the expanding inner circle */
-      --accent: #57e3ff;
+      --bg: #ffd400;          /* yellow background */
+      --text: rgba(0,0,0,.92);
+      --muted: rgba(0,0,0,.60);
+      --ring: rgba(0,0,0,.35);
+      --ringStrong: rgba(0,0,0,.75);
+      --fill: rgba(0,0,0,.55); /* expanding inner circle */
+      --btn: rgba(0,0,0,.90);
+      --btnText: #ffffff;
     }
+
     *{ box-sizing:border-box; }
+
     body{
       margin:0;
       min-height:100svh;
@@ -22,10 +25,7 @@
       place-items:center;
       padding:18px;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(1200px 900px at 50% 20%, rgba(87,227,255,.10), transparent 60%),
-        radial-gradient(900px 700px at 50% 85%, rgba(255,77,109,.08), transparent 60%),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
     }
 
@@ -33,9 +33,10 @@
       width:min(520px, 100%);
       padding:18px 18px 16px;
       border-radius:22px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(0,0,0,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.18);
+      backdrop-filter: blur(6px);
     }
 
     .header{
@@ -48,7 +49,7 @@
     .title{
       margin:0;
       font-size:18px;
-      font-weight:900;
+      font-weight:950;
       letter-spacing:.2px;
     }
     .subtitle{
@@ -60,10 +61,10 @@
     .badge{
       padding:8px 10px;
       border-radius:999px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--muted);
-      font-weight:800;
+      background: rgba(0,0,0,.08);
+      border: 1px solid rgba(0,0,0,.12);
+      color: rgba(0,0,0,.75);
+      font-weight:900;
       font-size:12px;
       white-space:nowrap;
     }
@@ -75,7 +76,7 @@
     }
 
     .dial{
-      width:min(380px, 82vw);
+      width:min(390px, 84vw);
       aspect-ratio:1/1;
       position:relative;
       display:grid;
@@ -87,16 +88,16 @@
       position:absolute;
       inset: 0;
       border-radius: 999px;
-      border: 10px solid var(--ringThin);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      border: 12px solid var(--ring);
     }
     .ringStrong{
       position:absolute;
       inset: 0;
       border-radius: 999px;
-      border: 10px solid rgba(255,255,255,.22);
-      mask: radial-gradient(circle, transparent 62%, #000 63%); /* subtle rim */
+      border: 12px solid var(--ringStrong);
+      mask: radial-gradient(circle, transparent 62%, #000 63%);
       pointer-events:none;
+      opacity:.35;
     }
 
     /* Expanding inner fill circle */
@@ -105,7 +106,6 @@
       height: 0%;
       border-radius: 999px;
       background: var(--fill);
-      transition: none;
     }
 
     .center{
@@ -118,48 +118,17 @@
       pointer-events:none;
     }
     .label{
-      font-size:44px;
-      font-weight:950;
-      letter-spacing:.5px;
+      font-size:46px;
+      font-weight:1000;
+      letter-spacing:.6px;
       text-transform: uppercase;
       line-height:1.05;
-      text-shadow: 0 8px 30px rgba(0,0,0,.45);
     }
     .timer{
       margin-top:10px;
       font-size:18px;
-      font-weight:850;
-      color: var(--muted);
-    }
-
-    /* Little dots for style (optional) */
-    .dot{
-      position:absolute;
-      width:12px; height:12px;
-      border-radius:999px;
-      background: rgba(255,255,255,.85);
-      top: 6%;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 10px 20px rgba(0,0,0,.35);
-    }
-    .dot.small{
-      width:10px; height:10px;
-      background: rgba(255,255,255,.75);
-      top: 14%;
-      left: 18%;
-    }
-    .dot.small2{
-      width:10px; height:10px;
-      background: rgba(255,255,255,.75);
-      top: 14%;
-      left: 82%;
-    }
-    .dot.red{
-      width:10px; height:10px;
-      background: rgba(255,77,109,.95);
-      top: 10%;
-      left: 68%;
+      font-weight:900;
+      color: rgba(0,0,0,.65);
     }
 
     .controls{
@@ -167,7 +136,7 @@
       gap:10px;
       justify-content:center;
       flex-wrap:wrap;
-      margin-top: 6px;
+      margin-top: 8px;
     }
     button{
       border:0;
@@ -177,15 +146,14 @@
       cursor:pointer;
     }
     .start{
-      background: var(--accent);
-      color:#001015;
-      box-shadow: 0 10px 24px rgba(87,227,255,.18);
+      background: var(--btn);
+      color: var(--btnText);
       min-width: 140px;
     }
     .secondary{
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.08);
+      color: rgba(0,0,0,.9);
+      border: 1px solid rgba(0,0,0,.14);
     }
     button:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -193,14 +161,14 @@
       margin-top:10px;
       min-height:20px;
       text-align:center;
-      color: var(--muted);
+      color: rgba(0,0,0,.65);
       font-size:13px;
     }
 
     .fineprint{
       margin-top: 12px;
       font-size: 12px;
-      color: rgba(255,255,255,.55);
+      color: rgba(0,0,0,.55);
       line-height:1.35;
     }
   </style>
@@ -210,8 +178,8 @@
   <div class="shell">
     <div class="header">
       <div>
-        <h1 class="title">Breath Hold Visual Test</h1>
-        <p class="subtitle">Tap Start once, then screen-record. 4s inhale → 60s hold fill.</p>
+        <h1 class="title">Smoker / Vaper Lung Test</h1>
+        <p class="subtitle">Tap Start once. 3s inhale → hold while the circle fills.</p>
       </div>
       <div class="badge" id="phaseBadge">READY</div>
     </div>
@@ -220,12 +188,6 @@
       <div class="dial">
         <div class="ring"></div>
         <div class="ringStrong"></div>
-
-        <div class="dot"></div>
-        <div class="dot small"></div>
-        <div class="dot small2"></div>
-        <div class="dot red"></div>
-
         <div class="fill" id="fill"></div>
 
         <div class="center">
@@ -259,8 +221,8 @@
   const statusEl = document.getElementById('status');
   const badgeEl  = document.getElementById('phaseBadge');
 
-  const INHALE_MS = 4000;     // 4 seconds
-  const HOLD_MS   = 60000;    // 1 minute fill
+  const INHALE_MS = 3000;   // 3 seconds (per your request)
+  const HOLD_MS   = 60000;  // 60 seconds to finish filling AFTER inhale
 
   let running = false;
   let raf = null;
@@ -280,42 +242,42 @@
 
   function format(s){ return `${s.toFixed(1)}s`; }
 
+  function setFill(t){
+    // Slightly under 100% so ring edge stays visible
+    const size = 98 * t; // percent
+    fillEl.style.width  = `${size}%`;
+    fillEl.style.height = `${size}%`;
+  }
+
   function tick(now){
     if(!running) return;
 
     const elapsed = now - startMs;
 
-    // Phase 1: Inhale (4s)
+    // Total animation time = inhale + hold
+    const totalMs = INHALE_MS + HOLD_MS;
+
+    // Overall fill should begin immediately on start (visible during inhale)
+    const totalT = Math.min(elapsed / totalMs, 1);
+    setFill(totalT);
+
+    // Phase labeling
     if(elapsed < INHALE_MS){
       badgeEl.textContent = "INHALE";
       labelEl.textContent = "Inhale 🫁";
-      timerEl.textContent = format(elapsed / 1000);
-      // Keep fill at 0 during inhale to match your spec
-      fillEl.style.width = "0%";
-      fillEl.style.height = "0%";
-      raf = requestAnimationFrame(tick);
-      return;
+    } else {
+      badgeEl.textContent = "HOLD";
+      labelEl.textContent = "Hold 🫁";
     }
 
-    // Phase 2: Hold (60s fill)
-    const holdElapsed = elapsed - INHALE_MS;
-    const t = Math.min(holdElapsed / HOLD_MS, 1); // 0..1
+    timerEl.textContent = format(elapsed / 1000);
 
-    badgeEl.textContent = "HOLD";
-    labelEl.textContent = "Hold 🫁";
-    timerEl.textContent = format((elapsed) / 1000);
-
-    // Expand inner circle from 0% to ~100% of the dial.
-    // Slightly under 100% so you still see the outer rim.
-    const size = 98 * t; // percent
-    fillEl.style.width  = `${size}%`;
-    fillEl.style.height = `${size}%`;
-
-    if(t >= 1){
+    if(totalT >= 1){
       running = false;
       startBtn.disabled = false;
-      statusEl.textContent = "Done. (Reset or Start again)";
       badgeEl.textContent = "DONE";
+      labelEl.textContent = "Done";
+      statusEl.textContent = "Done. (Reset or Start again)";
       return;
     }
 
@@ -326,7 +288,7 @@
     if(running) return;
     running = true;
     startBtn.disabled = true;
-    statusEl.textContent = "Recording tip: use full-screen browser for a clean capture.";
+    statusEl.textContent = "Tip: open full-screen for a cleaner screen recording.";
     startMs = performance.now();
     raf = requestAnimationFrame(tick);
   }
